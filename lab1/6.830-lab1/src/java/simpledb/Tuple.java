@@ -3,6 +3,7 @@ package simpledb;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Tuple maintains information about the contents of a tuple. Tuples have a
@@ -12,6 +13,9 @@ import java.util.Iterator;
 public class Tuple implements Serializable {
 
     private static final long serialVersionUID = 1L;
+    private TupleDesc tupleDesc;
+    private RecordId recordId;
+    private Field[] fields;//value of field names
 
     /**
      * Create a new tuple with the specified schema (type).
@@ -22,14 +26,16 @@ public class Tuple implements Serializable {
      */
     public Tuple(TupleDesc td) {
         // some code goes here
+        this.tupleDesc = td;
+        this.recordId = null;
+        this.fields = new Field[td.numFields()];
     }
 
     /**
      * @return The TupleDesc representing the schema of this tuple.
      */
     public TupleDesc getTupleDesc() {
-        // some code goes here
-        return null;
+        return this.tupleDesc;
     }
 
     /**
@@ -37,8 +43,7 @@ public class Tuple implements Serializable {
      *         be null.
      */
     public RecordId getRecordId() {
-        // some code goes here
-        return null;
+        return this.recordId;
     }
 
     /**
@@ -48,7 +53,8 @@ public class Tuple implements Serializable {
      *            the new RecordId for this tuple.
      */
     public void setRecordId(RecordId rid) {
-        // some code goes here
+        this.recordId = rid;
+        return;
     }
 
     /**
@@ -59,8 +65,13 @@ public class Tuple implements Serializable {
      * @param f
      *            new value for the field.
      */
-    public void setField(int i, Field f) {
-        // some code goes here
+    public void setField(int i, Field f)throws NoSuchElementException {
+        //check if index is valid
+        if (i >= 0 || i < this.tupleDesc.numFields()) {
+            this.fields[i] = f;
+            return;
+        }
+        throw new NoSuchElementException();
     }
 
     /**
@@ -69,9 +80,12 @@ public class Tuple implements Serializable {
      * @param i
      *            field index to return. Must be a valid index.
      */
-    public Field getField(int i) {
-        // some code goes here
-        return null;
+    public Field getField(int i) throws NoSuchElementException {
+        //check if index is valid
+        if (i >= 0 || i < this.tupleDesc.numFields()) {
+            return this.fields[i];
+        }
+        throw new NoSuchElementException();
     }
 
     /**
@@ -84,7 +98,13 @@ public class Tuple implements Serializable {
      */
     public String toString() {
         // some code goes here
-        throw new UnsupportedOperationException("Implement this");
+        //throw new UnsupportedOperationException("Implement this");
+        String str = "";
+        for(int i = 0; i < this.fields.length; i++){
+            str += this.fields[i].toString() + "\t";
+        }
+        str += "\n";
+        return str;
     }
     
     /**
@@ -94,7 +114,7 @@ public class Tuple implements Serializable {
     public Iterator<Field> fields()
     {
         // some code goes here
-        return null;
+        return Arrays.asList(this.fields).iterator();
     }
     
     /**
@@ -102,6 +122,6 @@ public class Tuple implements Serializable {
      * */
     public void resetTupleDesc(TupleDesc td)
     {
-        // some code goes here
+        this.tupleDesc = td;
     }
 }
