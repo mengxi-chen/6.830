@@ -2,6 +2,7 @@ package simpledb;
 
 import java.io.*;
 
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -24,6 +25,10 @@ public class BufferPool {
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
 
+    //declare
+    int numPages                = -1;
+    HashMap<PageId, Page> pool  = new HashMap<PageId, Page>();
+
     /**
      * Creates a BufferPool that caches up to numPages pages.
      *
@@ -31,6 +36,7 @@ public class BufferPool {
      */
     public BufferPool(int numPages) {
         // some code goes here
+        this.numPages = numPages;
     }
     
     public static int getPageSize() {
@@ -54,8 +60,29 @@ public class BufferPool {
      */
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
-        // some code goes here
-        return null;
+
+        if(this.pool.containsKey(pid)){
+            return this.pool.get(pid);
+        }
+
+        /*
+        * We can't find the cached page in the BufferPool.
+        * We should add this page into the buffer pool. and then return it.
+         */
+        Page page = Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid);
+
+        if(page == null){
+            return null;
+        }
+
+        if((this.pool.size() + 1) > this.numPages){
+            //this.evictPage();
+            throw new DbException("too much pages in the pool");
+        }
+
+        this.pool.putIfAbsent(pid, page);
+
+        return page;
     }
 
     /**

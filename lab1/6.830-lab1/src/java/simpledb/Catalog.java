@@ -17,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Threadsafe
  */
 public class Catalog {
+    private static ConcurrentHashMap<String, DbFile> tables;
+    private static ConcurrentHashMap<DbFile, String> pkey;
 
     /**
      * Constructor.
@@ -24,6 +26,8 @@ public class Catalog {
      */
     public Catalog() {
         // some code goes here
+        this.tables = new ConcurrentHashMap<String, DbFile>();
+        this.pkey   = new ConcurrentHashMap<DbFile, String>();
     }
 
     /**
@@ -37,6 +41,10 @@ public class Catalog {
      */
     public void addTable(DbFile file, String name, String pkeyField) {
         // some code goes here
+        this.tables.putIfAbsent(name, file);
+        if (!(pkeyField == null || pkeyField == "")){
+            this.pkey.putIfAbsent(file, pkeyField);
+        }
     }
 
     public void addTable(DbFile file, String name) {
@@ -59,8 +67,11 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) throws NoSuchElementException {
-        // some code goes here
-        return 0;
+        if (name == null || !(this.tables.containsKey(name))) {
+            throw new NoSuchElementException();
+        } else{
+            return this.tables.get(name).getId();
+        }
     }
 
     /**
@@ -70,8 +81,15 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        Object values[] = this.tables.values().toArray();
+
+        for(int i = 0; i < values.length; i++){
+            DbFile obj = (DbFile)values[i];
+            if (obj.getId() == tableid){
+                return obj.getTupleDesc();
+            }
+        }
+        throw new NoSuchElementException();
     }
 
     /**
@@ -81,28 +99,76 @@ public class Catalog {
      *     function passed to addTable
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        Object values[] = this.tables.values().toArray();
+
+        for(int i = 0; i < values.length; i++){
+            DbFile obj = (DbFile)values[i];
+            if (obj.getId() == tableid){
+                return obj;
+            }
+        }
+        throw new NoSuchElementException();
     }
 
     public String getPrimaryKey(int tableid) {
-        // some code goes here
-        return null;
+        DbFile dbFile = getDatabaseFile(tableid);
+        if (dbFile == null || !(this.pkey.containsKey(dbFile))) {
+            return null;
+        } else{
+            return this.pkey.get(dbFile);
+        }
+    }
+
+    //helper class for iterator<Integer>
+    private class Iter implements Iterator<Integer>{
+        int cursor  = 0;
+        int lastRet = -1;
+
+        Object values[] = Catalog.this.tables.values().toArray();
+
+        public boolean hasNext(){
+            return cursor != Catalog.this.tables.size();
+        }
+
+        public Integer next(){
+            if(! hasNext()){
+                throw new NoSuchElementException();
+            }
+
+            int i = cursor;
+            Object[] obj = values;
+            cursor += 1;
+            lastRet =  i;
+            return ((DbFile) obj[lastRet]).getId();
+        }
     }
 
     public Iterator<Integer> tableIdIterator() {
-        // some code goes here
-        return null;
+        return new Iter();
     }
 
     public String getTableName(int id) {
-        // some code goes here
-        return null;
+        Object values[] = this.tables.values().toArray();
+
+        for(int i = 0; i < values.length; i++){
+            DbFile obj = (DbFile)values[i];
+            if (obj.getId() == id){
+                for (Object name : this.tables.keySet()) {
+                    if (this.tables.get(name).equals(obj)) {
+                        return (String)name;
+                    }
+                }
+                return null;
+            }
+        }
+        throw new NoSuchElementException();
     }
     
     /** Delete all tables from the catalog */
     public void clear() {
         // some code goes here
+        this.tables.clear();
+        this.pkey.clear();
     }
     
     /**
